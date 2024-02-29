@@ -2,11 +2,12 @@
 name = "golf-battle-ss"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = [""]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+pyautogui = "^0.9.54"
 
 
 [build-system]
