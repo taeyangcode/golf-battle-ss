@@ -2,31 +2,34 @@ import time
 from typing import Callable, Final
 import keyboard
 import pygetwindow
-from returns.maybe import Maybe, Nothing
+from pygetwindow import Win32Window
 
-HOTKEY: Final[str] = "ctrl+g"
+class GolfBattleEmulator:
+    emulator: pygetwindow.Win32Window
 
-class GolfBattle:
-    @staticmethod
-    def start_game(main_window: pygetwindow.Win32Window):
-        print(main_window.box)
+    def __init__(self, golf_battle_window: Win32Window):
+        self.emulator = golf_battle_window
 
-class WindowTitle:
-    @staticmethod
-    def starts_with(name: str) -> list[str]:
-        titles: list[str] = pygetwindow.getAllTitles()
-        starts_with_title: Callable[[str], bool] = lambda title: title.startswith(name)
-        return list(filter(starts_with_title, titles))
-
-    @staticmethod
-    def to_windows(titles: list[str]) -> list[pygetwindow.Win32Window]:
-        title_to_window: Callable[[str], pygetwindow.Win32Window] = lambda title: pygetwindow.getWindowsWithTitle(title)[0]
-        return list(map(title_to_window, titles))
+class MainGolfBattleEmulator(GolfBattleEmulator):
+    def __init__(self, golf_battle_window: Win32Window):
+        super().__init__(golf_battle_window)
     
-def window_from_windows(windows: list[pygetwindow.Win32Window], title: str) -> pygetwindow.Win32Window:
+    def start_game(self):
+        print(self.emulator.center)
+
+def find_window_titles_with_prefix(prefix: str) -> list[str]:
+    titles: list[str] = pygetwindow.getAllTitles()
+    starts_with_title: Callable[[str], bool] = lambda title: title.startswith(prefix)
+    return list(filter(starts_with_title, titles))
+
+def window_titles_to_windows(titles: list[str]) -> list[Win32Window]:
+    title_to_window: Callable[[str], Win32Window] = lambda title: pygetwindow.getWindowsWithTitle(title)[0]
+    return list(map(title_to_window, titles))
+    
+def find_window_from_windows(windows: list[Win32Window], title: str) -> Win32Window:
     return next(window for window in windows if window.title == title)
 
-def screenshot_windows(windows: list[pygetwindow.Win32Window], screenshot_key: str, pause: float):
+def screenshot_windows(windows: list[Win32Window], screenshot_key: str, pause: float):
     for window in windows:
         window.activate()
         time.sleep(pause)
@@ -34,12 +37,15 @@ def screenshot_windows(windows: list[pygetwindow.Win32Window], screenshot_key: s
         time.sleep(pause)
 
 def screenshot():
-    emulator_windows: list[pygetwindow.Win32Window] = WindowTitle.to_windows(WindowTitle.starts_with("MuMu Emu"))
-    main_window: pygetwindow.Win32Window = window_from_windows(emulator_windows, "MuMu Emu 1")
+    emulator_titles: list[str] = find_window_titles_with_prefix("MuMu Emu")
+    emulator_windows: list[Win32Window] = window_titles_to_windows(emulator_titles)
+    main_window: Win32Window = find_window_from_windows(emulator_windows, "MuMu Emu 1")
     screenshot_windows(windows=emulator_windows, screenshot_key="F9", pause=0.5)
     # GolfBattle.start_game(main_window=main_window)
 
 def main():
+    HOTKEY: Final[str] = "ctrl+g"
+
     keyboard.add_hotkey(HOTKEY, screenshot)
     keyboard.wait()
 
