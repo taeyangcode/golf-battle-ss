@@ -1,35 +1,38 @@
+import logging
 import time
+import sys
 from typing import Callable, Final
+
 import keyboard
+import pynput
 import pygetwindow
-from pygetwindow import Win32Window
+import pywinctl
+from returns.maybe import Maybe, Nothing, Some
 
 class GolfBattleEmulator:
-    emulator: pygetwindow.Win32Window
+    emulator: pywinctl.Window
 
-    def __init__(self, golf_battle_window: Win32Window):
+    def __init__(self, golf_battle_window: pywinctl.Window):
         self.emulator = golf_battle_window
 
 class MainGolfBattleEmulator(GolfBattleEmulator):
-    def __init__(self, golf_battle_window: Win32Window):
+    def __init__(self, golf_battle_window: pywinctl.Window):
         super().__init__(golf_battle_window)
-    
-    def start_game(self):
-        print(self.emulator.center)
 
 def find_window_titles_with_prefix(prefix: str) -> list[str]:
     titles: list[str] = pygetwindow.getAllTitles()
+    logging.debug(f"WINDOW TITLES: {titles}")
     starts_with_title: Callable[[str], bool] = lambda title: title.startswith(prefix)
+
     return list(filter(starts_with_title, titles))
 
-def window_titles_to_windows(titles: list[str]) -> list[Win32Window]:
-    title_to_window: Callable[[str], Win32Window] = lambda title: pygetwindow.getWindowsWithTitle(title)[0]
-    return list(map(title_to_window, titles))
-    
-def find_window_from_windows(windows: list[Win32Window], title: str) -> Win32Window:
-    return next(window for window in windows if window.title == title)
+def window_title_to_window(title: str) -> pywinctl.Window:
+    return pywinctl.getWindowsWithTitle(title)[0]
 
-def screenshot_windows(windows: list[Win32Window], screenshot_key: str, pause: float):
+def find_window_from_windows(windows: list[pywinctl.Window], title: str) -> Maybe[pywinctl.Window]:
+    return next(Some(window for window in windows if window.title == title), Nothing)
+
+def screenshot_windows(windows: list[pywinctl.Window], screenshot_key: str, pause: float):
     for window in windows:
         window.activate()
         time.sleep(pause)
@@ -37,16 +40,33 @@ def screenshot_windows(windows: list[Win32Window], screenshot_key: str, pause: f
         time.sleep(pause)
 
 def screenshot():
-    emulator_titles: list[str] = find_window_titles_with_prefix("MuMu Emu")
-    emulator_windows: list[Win32Window] = window_titles_to_windows(emulator_titles)
-    main_window: Win32Window = find_window_from_windows(emulator_windows, "MuMu Emu 1")
-    screenshot_windows(windows=emulator_windows, screenshot_key="F9", pause=0.5)
-    # GolfBattle.start_game(main_window=main_window)
+    emulator_titles: list[str] = find_window_titles_with_prefix("KakaoTalk")
+    emulator_windows: list[pywinctl.Window] = list(map(window_title_to_window, emulator_titles))
+    # emulators: list[GolfBattleEmulator] = map(lambda window: GolfBattleEmulator(window), emulator_windows)
+
+def handle_darwin(hotkey: str, callback: Callable[[], None]):
+    with pynput.keyboard.GlobalHotKeys({ hotkey: callback }) as listener:
+        listener.join()
+
+def handle_windows(hotkey: str, callback: Callable[[], None]):
+    keyboard.add_hotkey(hotkey, callback)
+    keyboard.wait()
+
+def logger_setup():
+    logging.basicConfig(level=logging.DEBUG)
 
 def main():
-    HOTKEY: Final[str] = "ctrl+g"
+    DARWIN_HOTKEY: Final[str] = "<ctrl>+g"
+    WINDOWS_HOTKEY: Final[str] = "ctrl+g"
 
-    keyboard.add_hotkey(HOTKEY, screenshot)
-    keyboard.wait()
+    logger_setup()
+
+    match sys.platform:
+        case "darwin":
+            handle_darwin(DARWIN_HOTKEY, screenshot)
+        case "win32":
+            handle_darwin(WINDOWS_HOTKEY, screenshot)
+        case _:
+            raise RuntimeError("ERROR: os not supported")
 
 main()

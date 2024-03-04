@@ -10,8 +10,10 @@ package-mode = false
 python = "^3.11"
 pyautogui = "^0.9.54"
 keyboard = "^0.13.5"
-pygetwindow = "^0.0.9"
 returns = "^0.22.0"
+pynput = "^1.7.6"
+pywinctl = "^0.3"
+pygetwindow = "^0.0.9"
 
 [build-system]
 requires = ["poetry-core"]
